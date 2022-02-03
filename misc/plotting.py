@@ -1,5 +1,59 @@
 import numpy as np
 
+#https://gist.github.com/thriveth/8560036
+colorblind_cycle = ['#377eb8', '#ff7f00', '#4daf4a',
+                    '#f781bf', '#a65628', '#984ea3',
+                    '#999999', '#e41a1c', '#dede00']
+
+
+def set_size(width, logopt, fraction=1):
+    #https://jwalton.info/Embed-Publication-Matplotlib-Latex/
+    """ Set aesthetic figure dimensions to avoid scaling in latex.
+
+    Parameters
+    ----------
+    width: float
+            Width in pts
+    fraction: float
+            Fraction of the width which you wish the figure to occupy
+
+    Returns
+    -------
+    fig_dim: tuple
+            Dimensions of figure in inches
+    """
+    if width == 'thesis':
+        width_pt = 426.79135
+    elif width == 'beamer':
+        width_pt = 307.28987
+    elif width == 'pnas':
+        width_pt = 246.09686
+    elif width == 'aistats22':
+        width_pt = 487.8225
+    else:
+        width_pt = width
+
+    # Width of figure
+    fig_width_pt = width_pt * fraction
+
+    # Convert from pt to inches
+    inches_per_pt = 1 / 72.27
+
+    # Golden ratio to set aesthetic figure height
+    golden_ratio = (5**.5 - 1) / 2
+
+    # Figure width in inches
+    fig_width_in = fig_width_pt * inches_per_pt / 2
+    # Figure height in inches
+    if logopt:
+        fig_height_in = ( fig_width_pt * inches_per_pt * golden_ratio * 6 / 10 ) * 5 / 6
+    else:
+        fig_height_in = ( fig_width_pt * inches_per_pt * golden_ratio * 55 / 100 ) * 5 / 6
+
+    fig_dim = (fig_width_in, fig_height_in)
+
+    return fig_dim
+
 
 def generate_diverse_colors(n_colors, n_global_moves=32, ref_color=None):
     # ref_color: a list of numpy array with size 3 (r,g,b) and values in [0, 1]
