@@ -6,8 +6,8 @@ colorblind_cycle = ['#377eb8', '#ff7f00', '#4daf4a',
                     '#999999', '#e41a1c', '#dede00']
 
 
-def set_size(width, logopt, fraction=1):
-    #https://jwalton.info/Embed-Publication-Matplotlib-Latex/
+def set_size(width, fraction=1, subplots=(1, 1)):
+    # https://jwalton.info/Embed-Publication-Matplotlib-Latex/
     """ Set aesthetic figure dimensions to avoid scaling in latex.
 
     Parameters
@@ -16,6 +16,8 @@ def set_size(width, logopt, fraction=1):
             Width in pts
     fraction: float
             Fraction of the width which you wish the figure to occupy
+    subplots: array-like, optional
+            The number of rows and columns of subplots.
 
     Returns
     -------
@@ -43,16 +45,11 @@ def set_size(width, logopt, fraction=1):
     golden_ratio = (5**.5 - 1) / 2
 
     # Figure width in inches
-    fig_width_in = fig_width_pt * inches_per_pt / 2
+    fig_width_in = fig_width_pt * inches_per_pt
     # Figure height in inches
-    if logopt:
-        fig_height_in = ( fig_width_pt * inches_per_pt * golden_ratio * 6 / 10 ) * 5 / 6
-    else:
-        fig_height_in = ( fig_width_pt * inches_per_pt * golden_ratio * 55 / 100 ) * 5 / 6
+    fig_height_in = fig_width_in * golden_ratio * (subplots[0] / subplots[1])
 
-    fig_dim = (fig_width_in, fig_height_in)
-
-    return fig_dim
+    return (fig_width_in, fig_height_in)
 
 
 def generate_diverse_colors(n_colors, n_global_moves=32, ref_color=None):
