@@ -12,7 +12,7 @@ def tensor2pil(tensor, drange=[0,1]):
     """
     assert tensor.ndim == 3 or tensor.ndim == 4
     if tensor.ndim == 3:
-        return tensor2pil(tensor.unsqueeze(0))[0]
+        return tensor2pil(tensor.unsqueeze(0), drange=drange)[0]
     img_batch = tensor.cpu().numpy().transpose([0, 2, 3, 1])
     img_batch = (img_batch - drange[0]) / (drange[1] - drange[0])  * 255# img_batch with pixel values in [0, 255]
     img_batch = img_batch.astype(np.uint8)
