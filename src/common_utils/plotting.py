@@ -1,9 +1,33 @@
+import matplotlib as mpl
 import numpy as np
 
 #https://gist.github.com/thriveth/8560036
 colorblind_cycle = ['#377eb8', '#ff7f00', '#4daf4a',
                     '#f781bf', '#a65628', '#984ea3',
                     '#999999', '#e41a1c', '#dede00']
+
+
+def setup_matplotlib():
+    import seaborn as sns
+    # mpl.use('Agg')
+    # plt.style.use('classic')
+    # sns.set(font_scale=1.5)
+    sns.set_style('white')
+    sns.color_palette('colorblind')
+    nice_fonts = {
+        # Use LaTeX to write all text
+        "text.usetex": True,
+        'text.latex.preamble': r'\usepackage{amsfonts}',
+        "font.family": "serif",
+        # Use 10pt font in plots, to match 10pt font in document
+        "axes.labelsize": 10,
+        "font.size": 10,
+        # Make the legend/label fonts a little smaller
+        "legend.fontsize": 8,
+        "xtick.labelsize": 7,
+        "ytick.labelsize": 7,
+    }
+    mpl.rcParams.update(nice_fonts)
 
 
 def set_size(width, fraction=1, subplots=(1, 1)):
@@ -54,7 +78,7 @@ def set_size(width, fraction=1, subplots=(1, 1)):
 
 def generate_diverse_colors(n_colors, n_global_moves=32, ref_color=None):
     # ref_color: a list of numpy array with size 3 (r,g,b) and values in [0, 1]
-    
+
     class Color:
         max_weighted_square_distance = (((512 + 127) * 65025) >> 8) + 4 * 65025 + (((767 - 127) * 65025) >> 8)
 
@@ -97,10 +121,10 @@ def generate_diverse_colors(n_colors, n_global_moves=32, ref_color=None):
         "005F39", "6B6882", "5FAD4E", "A75740", "A5FFD2", "FFB167", "009BFF", "E85EBE",
     ]
     colors = list(map(lambda h: Color(*tuple(int(h[i:i+2], 16) for i in (0, 2, 4))), colors_hex))
-    
+
     if ref_color is not None:
         n_colors += 1
-        
+
     if len(colors) >= n_colors:
         colors = colors[:n_colors]
         if ref_color is not None:
