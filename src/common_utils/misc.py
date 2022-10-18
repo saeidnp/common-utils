@@ -1,5 +1,10 @@
 import os
 
+def infinite_loader(dataloader):
+    while True:
+        for data in dataloader:
+            yield data
+
 def num_available_cores():
     # Copied from pytorch source code https://pytorch.org/docs/stable/_modules/torch/utils/data/dataloader.html#DataLoader
     max_num_worker_suggest = None
