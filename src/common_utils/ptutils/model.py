@@ -20,7 +20,7 @@ class ModelBase(nn.Module):
         data = torch.load(path, map_location=lambda storage, loc: storage)
         self.load_state_dict(data["state_dict"])
 
-    def num_parameters(self):
+    def count_parameters(self):
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
     def device(self):
