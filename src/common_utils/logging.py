@@ -10,7 +10,7 @@ def support_unobserve():
         os.environ["WANDB_MODE"] = "dryrun"
 
 
-def init(config, project_name=None, entity=None, tags=None, **kwargs):
+def init(config, project_name=None, entity=None, tags=[], **kwargs):
     if entity is None:
         assert (
             "WANDB_ENTITY" in os.environ
@@ -19,6 +19,7 @@ def init(config, project_name=None, entity=None, tags=None, **kwargs):
         assert (
             "WANDB_PROJECT" in os.environ
         ), "Please either pass in \"project_name\" to logging.init or set environment variable 'WANDB_PROJECT' to your wandb project name."
+    tags.append(os.path.basename(sys.argv[0]))
     wandb.init(project=project_name, entity=entity, config=config, tags=tags, **kwargs)
 
 
@@ -40,7 +41,8 @@ class LoggingHandler:
 
         for k, v in kwargs.items():
             if k not in self.log_dict:
-                raise Exception(f"Key {k} not in log_dict. Keys are {self.log_dict.keys()}")
+                self.log_dict[k] = []
+                #raise Exception(f"Key {k} not in log_dict. Keys are {self.log_dict.keys()}")
             self.log_dict[k].append(v)
 
     def reset(self):
