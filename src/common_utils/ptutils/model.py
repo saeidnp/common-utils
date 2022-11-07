@@ -13,7 +13,7 @@ class ModelBase(nn.Module):
         to_save = {}
         to_save["state_dict"] = self.state_dict()
         if config is not None:
-            to_save[config] = config
+            to_save["config"] = config
         torch.save(to_save, path)
 
     def load(self, path):
