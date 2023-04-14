@@ -10,7 +10,7 @@ def support_unobserve():
         os.environ["WANDB_MODE"] = "dryrun"
 
 
-def init(config, project_name=None, entity=None, tags=[], **kwargs):
+def init(config, project_name=None, entity=None, tags=[], notes=None, **kwargs):
     if entity is None:
         assert (
             "WANDB_ENTITY" in os.environ
@@ -20,7 +20,10 @@ def init(config, project_name=None, entity=None, tags=[], **kwargs):
             "WANDB_PROJECT" in os.environ
         ), "Please either pass in \"project_name\" to logging.init or set environment variable 'WANDB_PROJECT' to your wandb project name."
     tags.append(os.path.basename(sys.argv[0]))
-    wandb.init(project=project_name, entity=entity, config=config, tags=tags, **kwargs)
+    if "_MY_JOB_ID" in os.environ:
+        x = f"(jobid:{os.environ['_MY_JOB_ID']})"
+        notes = x if notes is None else notes + " " + x
+    wandb.init(project=project_name, entity=entity, config=config, tags=tags, notes=notes, **kwargs)
 
 
 class LoggingHandler:
