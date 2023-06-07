@@ -2,6 +2,8 @@ import random
 import torch
 import numpy as np
 
+# This file is taken from https://github.com/wsgharvey/pytorch-utils
+
 # RNG --------------------------------------------------
 
 def set_random_seed(seed):
