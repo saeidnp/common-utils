@@ -8,8 +8,7 @@ setuptools.setup(
     version="0.0.1",
     author="Saeid Naderiparizi",
     description="A few useful functions for various ML projects",
-    py_modules=["common_utils"],
-    license='MIT License',
+    packages=["common_utils"],
     python_requires=">=3.6",
     install_requires=[
             'wandb',
