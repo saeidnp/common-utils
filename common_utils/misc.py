@@ -1,13 +1,15 @@
 import os
 import itertools
 
+
 def infinite_loader(dataloader):
     return itertools.cycle(dataloader)
+
 
 def num_available_cores():
     # Copied from pytorch source code https://pytorch.org/docs/stable/_modules/torch/utils/data/dataloader.html#DataLoader
     max_num_worker_suggest = None
-    if hasattr(os, 'sched_getaffinity'):
+    if hasattr(os, "sched_getaffinity"):
         try:
             max_num_worker_suggest = len(os.sched_getaffinity(0))
         except Exception:
@@ -49,4 +51,5 @@ def get_register_fn(_CLASSES):
             return _register
         else:
             return _register(cls)
+
     return register_fn

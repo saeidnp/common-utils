@@ -2,23 +2,26 @@ import random
 import torch
 import numpy as np
 
-# This file is taken from https://github.com/wsgharvey/pytorch-utils
+# This file is sourced from https://github.com/wsgharvey/pytorch-utils
 
 # RNG --------------------------------------------------
 
+
 def set_random_seed(seed):
     random.seed(seed)
-    torch.manual_seed(seed+1)
-    torch.cuda.manual_seed_all(seed+2)
-    np.random.seed(seed+3)
+    torch.manual_seed(seed + 1)
+    torch.cuda.manual_seed_all(seed + 2)
+    np.random.seed(seed + 3)
+
 
 def get_random_state():
     return {
         "python": random.getstate(),
         "torch": torch.get_rng_state(),
         "cuda": torch.cuda.get_rng_state_all(),
-        "numpy": np.random.get_state()
+        "numpy": np.random.get_state(),
     }
+
 
 def set_random_state(state):
     random.setstate(state["python"])
@@ -27,8 +30,7 @@ def set_random_state(state):
     np.random.set_state(state["numpy"])
 
 
-class RNG():
-
+class RNG:
     def __init__(self, seed=None, state=None):
 
         self.state = get_random_state()
@@ -52,13 +54,12 @@ class RNG():
     def set_state(self, state):
         self.state = state
 
-class rng_decorator():
 
+class rng_decorator:
     def __init__(self, seed):
         self.seed = seed
 
     def __call__(self, f):
-
         def wrapped_f(*args, **kwargs):
             with RNG(self.seed):
                 return f(*args, **kwargs)
