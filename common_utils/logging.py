@@ -10,21 +10,21 @@ def support_unobserve():
         os.environ["WANDB_MODE"] = "dryrun"
 
 
-def init(config, project_name=None, entity=None, tags=[], notes=None, **kwargs):
+def init(config, project=None, entity=None, tags=[], notes=None, **kwargs):
     if entity is None:
         assert (
             "WANDB_ENTITY" in os.environ
         ), "Please either pass in \"entity\" to logging.init or set environment variable 'WANDB_ENTITY' to your wandb entity name."
-    if project_name is None:
+    if project is None:
         assert (
             "WANDB_PROJECT" in os.environ
-        ), "Please either pass in \"project_name\" to logging.init or set environment variable 'WANDB_PROJECT' to your wandb project name."
+        ), "Please either pass in \"project\" to logging.init or set environment variable 'WANDB_PROJECT' to your wandb project name."
     tags.append(os.path.basename(sys.argv[0]))
     if "_MY_JOB_ID" in os.environ:
         x = f"(jobid:{os.environ['_MY_JOB_ID']})"
         notes = x if notes is None else notes + " " + x
     wandb.init(
-        project=project_name,
+        project=project,
         entity=entity,
         config=config,
         tags=tags,
