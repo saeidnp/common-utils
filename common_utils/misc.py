@@ -1,5 +1,6 @@
 import os
 import itertools
+import time
 
 
 def infinite_loader(dataloader):
@@ -34,7 +35,7 @@ def splitit(total_size, split_size):
 
 
 def get_register_fn(_CLASSES):
-    def register_fn(cls=None, *, name=None):
+    def register_fn(cls, *, name=None):
         """A decorator for registering predictor classes."""
 
         def _register(cls):
@@ -47,9 +48,6 @@ def get_register_fn(_CLASSES):
             _CLASSES[local_name] = cls
             return cls
 
-        if cls is None:
-            return _register
-        else:
-            return _register(cls)
+        return _register(cls)
 
     return register_fn
