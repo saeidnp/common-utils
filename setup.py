@@ -8,7 +8,7 @@ setuptools.setup(
     version="0.0.1",
     author="Saeid Naderiparizi",
     description="A few useful functions for various ML projects",
-    packages=["common_utils"],
+    packages=setuptools.find_packages(),
     python_requires=">=3.6",
     install_requires=[
             'wandb',
