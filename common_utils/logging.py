@@ -23,6 +23,9 @@ def init(config, project=None, entity=None, tags=[], notes=None, **kwargs):
     if "_MY_JOB_ID" in os.environ:
         x = f"(jobid:{os.environ['_MY_JOB_ID']})"
         notes = x if notes is None else notes + " " + x
+    if "SLURM_ARRAY_JOB_ID" in os.environ:
+        x = f"(job_array_id:{os.environ['SLURM_ARRAY_JOB_ID']})"
+        notes = x if notes is None else notes + " " + x
     return wandb.init(
         project=project,
         entity=entity,
