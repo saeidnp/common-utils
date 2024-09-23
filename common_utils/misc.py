@@ -1,7 +1,21 @@
-import os
 import itertools
-import time
+import os
+from functools import wraps
+from filelock import FileLock
+from pathlib import Path
 
+import numpy as np
+import torch
+
+class ProtectFile(FileLock):
+    """ Given a file path, this class will create a lock file and prevent race conditions
+        using a FileLock. The FileLock path is automatically inferred from the file path.
+    """
+    def __init__(self, path, timeout=2, **kwargs):
+        path = Path(path)
+        name = path.name if path.name.startswith(".") else f".{path.name}"
+        lock_path = Path(path).parent / f"{path.name}.lock"
+        super().__init__(lock_path, timeout=timeout, **kwargs)
 
 def infinite_loader(dataloader):
     return itertools.cycle(dataloader)
