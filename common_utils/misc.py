@@ -14,7 +14,7 @@ class ProtectFile(FileLock):
     def __init__(self, path, timeout=2, **kwargs):
         path = Path(path)
         name = path.name if path.name.startswith(".") else f".{path.name}"
-        lock_path = Path(path).parent / f"{path.name}.lock"
+        lock_path = Path(path).parent / f"{name}.lock"
         super().__init__(lock_path, timeout=timeout, **kwargs)
 
 def infinite_loader(dataloader):
