@@ -50,7 +50,7 @@ def splitit(total_size, split_size):
 
 def get_register_fn(_CLASSES):
     def register_fn(cls=None, *, name=None):
-        """A decorator for registering predictor classes."""
+        """A decorator for registering classes."""
 
         def _register(cls):
             if name is None:
@@ -58,7 +58,7 @@ def get_register_fn(_CLASSES):
             else:
                 local_name = name
             if local_name in _CLASSES:
-                raise ValueError(f"Already registered model with name: {local_name}")
+                raise ValueError(f"Already registered class with name: {local_name}")
             _CLASSES[local_name] = cls
             return cls
 
