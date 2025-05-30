@@ -5,7 +5,21 @@ from filelock import FileLock
 from pathlib import Path
 
 import numpy as np
-import torch
+
+try:
+    import torch
+    _TORCH_AVAILABLE = True
+except ImportError:
+    _TORCH_AVAILABLE = False
+    # You could assign a placeholder to torch here if some functions
+    # might try to access torch.something without checking _TORCH_AVAILABLE first,
+    # though it's better to check _TORCH_AVAILABLE.
+    # For example:
+    # class TorchPlaceholder:
+    #     def __getattr__(self, name):
+    #         raise ImportError("torch is not available, but was accessed.")
+    # torch = TorchPlaceholder()
+
 
 class ProtectFile(FileLock):
     """ Given a file path, this class will create a lock file and prevent race conditions
@@ -118,5 +132,7 @@ def batchify_numpy(max_batch_size, axis=0, batch_keys=None):
     return _batchify_helper(max_batch_size, concat_fn=concat_fn, batch_keys=batch_keys)
 
 def batchify_torch(max_batch_size, dim=0, batch_keys=None):
+    if not _TORCH_AVAILABLE:
+        raise ImportError("torch is not available. Please install torch to use batchify_torch.")
     concat_fn = lambda x: torch.cat(x, dim=dim)
     return _batchify_helper(max_batch_size, concat_fn=concat_fn, batch_keys=batch_keys)
