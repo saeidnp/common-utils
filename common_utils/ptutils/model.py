@@ -21,7 +21,7 @@ class ModelBase(nn.Module):
         torch.save(to_save, path)
 
     def load(self, path, strict=True):
-        data = torch.load(path, map_location=lambda storage, loc: storage)
+        data = torch.load(path, map_location=lambda storage, loc: storage, weights_only=False)
         self.load_state_dict(data["state_dict"], strict=strict)
 
     def count_parameters(self):
