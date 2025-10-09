@@ -1,6 +1,12 @@
 import random
-import torch
 import numpy as np
+
+try:
+    import torch
+    _TORCH_AVAILABLE = True
+except ImportError:
+    _TORCH_AVAILABLE = False
+    torch = None # Placeholder to prevent NameError if accessed, though logic should use _TORCH_AVAILABLE
 
 # This file is sourced from https://github.com/wsgharvey/pytorch-utils
 
@@ -9,24 +15,40 @@ import numpy as np
 
 def set_random_seed(seed):
     random.seed(seed)
-    torch.manual_seed(seed + 1)
-    torch.cuda.manual_seed_all(seed + 2)
+    if _TORCH_AVAILABLE:
+        torch.manual_seed(seed + 1)
+        if hasattr(torch, 'cuda') and torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed + 2)
     np.random.seed(seed + 3)
 
 
 def get_random_state():
-    return {
+    state = {
         "python": random.getstate(),
-        "torch": torch.get_rng_state(),
-        "cuda": torch.cuda.get_rng_state_all(),
         "numpy": np.random.get_state(),
     }
+    if _TORCH_AVAILABLE:
+        state["torch"] = torch.get_rng_state()
+        if hasattr(torch, 'cuda') and torch.cuda.is_available():
+            state["cuda"] = torch.cuda.get_rng_state_all()
+        else:
+            state["cuda"] = None # Or an empty list, consistent with what get_rng_state_all might return
+    else:
+        state["torch"] = None
+        state["cuda"] = None
+    return state
 
 
 def set_random_state(state):
     random.setstate(state["python"])
-    torch.set_rng_state(state["torch"])
-    torch.cuda.set_rng_state_all(state["cuda"])
+    if _TORCH_AVAILABLE:
+        if state.get("torch") is not None:
+            torch.set_rng_state(state["torch"])
+        if state.get("cuda") is not None and hasattr(torch, 'cuda') and torch.cuda.is_available():
+            # Ensure cuda state is not attempted to be set if it's None or cuda not available
+            # get_rng_state_all() returns a list of tensors. set_rng_state_all() expects a list of tensors.
+            # If state["cuda"] is an empty list (from a non-CUDA torch setup), this should be fine.
+            torch.cuda.set_rng_state_all(state["cuda"])
     np.random.set_state(state["numpy"])
 
 

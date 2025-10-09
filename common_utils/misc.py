@@ -5,7 +5,21 @@ from filelock import FileLock
 from pathlib import Path
 
 import numpy as np
-import torch
+
+try:
+    import torch
+    _TORCH_AVAILABLE = True
+except ImportError:
+    _TORCH_AVAILABLE = False
+    # You could assign a placeholder to torch here if some functions
+    # might try to access torch.something without checking _TORCH_AVAILABLE first,
+    # though it's better to check _TORCH_AVAILABLE.
+    # For example:
+    # class TorchPlaceholder:
+    #     def __getattr__(self, name):
+    #         raise ImportError("torch is not available, but was accessed.")
+    # torch = TorchPlaceholder()
+
 
 class ProtectFile(FileLock):
     """ Given a file path, this class will create a lock file and prevent race conditions
@@ -70,7 +84,7 @@ def get_register_fn(_CLASSES):
     return register_fn
 
 
-def _batchify_helper(max_batch_size, concat_fn, dim=0, batch_keys=None):
+def _batchify_helper(max_batch_size, concat_fn, batch_keys=None):
     """
     Decorator function that batches the output of another function based on the given parameters.
     The decorated function should take an integer `n` as its first argument and return either a dictionary or an array/tensor.
@@ -92,21 +106,28 @@ def _batchify_helper(max_batch_size, concat_fn, dim=0, batch_keys=None):
                 return func(n, *args, **kwargs)
             if batch_keys is None:
                 samples = []
-                while n > 0:
-                    current_batch_size = min(n, max_batch_size)
-                    samples.append(func(current_batch_size, *args, **kwargs))
-                    n -= current_batch_size
+                offset = 0
+                for batch_size in splitit(n, max_batch_size):
+                    kwargs_with_offset = kwargs.copy()
+                    kwargs_with_offset['offset'] = offset
+                    samples.append(func(batch_size, *args, **kwargs_with_offset))
+                    offset += batch_size
                 return concat_fn(samples)
             else:
                 batched_dict = {k: [] for k in batch_keys}
-                non_batched_dict = None
-                while n > 0:
-                    current_batch_size = min(n, max_batch_size)
-                    batch = func(current_batch_size, *args, **kwargs)
+                non_batched_dict = {}
+                is_first_batch = True
+                offset = 0
+                for batch_size in splitit(n, max_batch_size):
+                    kwargs_with_offset = kwargs.copy()
+                    kwargs_with_offset['offset'] = offset
+                    batch = func(batch_size, *args, **kwargs_with_offset)
                     for k in batch_keys:
                         batched_dict[k].append(batch[k])
-                    non_batched_dict = {k:v for k,v in batch.items() if k not in batch_keys}
-                    n -= current_batch_size
+                    if is_first_batch:
+                        non_batched_dict = {k:v for k,v in batch.items() if k not in batch_keys}
+                        is_first_batch = False
+                    offset += batch_size
                 batched_dict = {k: concat_fn(v) for k,v in batched_dict.items()}
                 batched_dict.update(non_batched_dict)
                 return batched_dict
@@ -118,5 +139,7 @@ def batchify_numpy(max_batch_size, axis=0, batch_keys=None):
     return _batchify_helper(max_batch_size, concat_fn=concat_fn, batch_keys=batch_keys)
 
 def batchify_torch(max_batch_size, dim=0, batch_keys=None):
+    if not _TORCH_AVAILABLE:
+        raise ImportError("torch is not available. Please install torch to use batchify_torch.")
     concat_fn = lambda x: torch.cat(x, dim=dim)
     return _batchify_helper(max_batch_size, concat_fn=concat_fn, batch_keys=batch_keys)

@@ -14,6 +14,9 @@ setuptools.setup(
             'wandb',
             'tqdm',
             'torch>=1.0.1',
-            'filelock'
+            'filelock',
+            'numpy',
+            'matplotlib',
+            'Pillow'
         ],
 )
