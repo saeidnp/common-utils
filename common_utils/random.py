@@ -65,6 +65,7 @@ class RNG:
     def __enter__(self):
         self.external_state = get_random_state()
         set_random_state(self.state)
+        return self
 
     def __exit__(self, *args):
         self.state = get_random_state()

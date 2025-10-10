@@ -169,6 +169,58 @@ class TestRNGContext:
         if TORCH_AVAILABLE:
             assert torch.equal(torch.cat((sequence_part1_torch, sequence_part2_torch)), expected_sequence_torch)
 
+    def test_rng_get_set_state(self):
+        # 1. Test set_state
+        set_random_seed(42)
+        state_42 = get_random_state()
+        numbers_from_state_42 = generate_random_numbers(3)
+
+        rng = RNG()
+        rng.set_state(state_42)
+        with rng:
+            numbers1 = generate_random_numbers(3)
+        
+        assert numbers1['python'] == numbers_from_state_42['python']
+        assert np.array_equal(numbers1['numpy'], numbers_from_state_42['numpy'])
+        if TORCH_AVAILABLE:
+            assert torch.equal(numbers1['torch'], numbers_from_state_42['torch'])
+
+        # 2. Test get_state
+        set_random_seed(42)
+        rng_seeded = RNG(seed=43)
+        with rng_seeded:
+            generate_random_numbers(3)
+        state_inside = rng_seeded.get_state()
+
+        # check that we can reproduce the next numbers
+        set_random_state(state_inside)
+        numbers_after_state_inside = generate_random_numbers(3)
+
+        with RNG(seed=43):
+            generate_random_numbers(3)
+            numbers_next_inside = generate_random_numbers(3)
+
+        assert numbers_after_state_inside['python'] == numbers_next_inside['python']
+        assert np.array_equal(numbers_after_state_inside['numpy'], numbers_next_inside['numpy'])
+        if TORCH_AVAILABLE:
+            assert torch.equal(numbers_after_state_inside['torch'], numbers_next_inside['torch'])
+
+    def test_rng_init_with_seed_and_state(self):
+        set_random_seed(42)
+        state_42 = get_random_state()
+        
+        set_random_seed(99)
+        numbers_from_seed_99 = generate_random_numbers(3)
+
+        # seed should take precedence
+        with RNG(seed=99, state=state_42):
+            numbers = generate_random_numbers(3)
+
+        assert numbers['python'] == numbers_from_seed_99['python']
+        assert np.array_equal(numbers['numpy'], numbers_from_seed_99['numpy'])
+        if TORCH_AVAILABLE:
+            assert torch.equal(numbers['torch'], numbers_from_seed_99['torch'])
+
 
 # Test rng_decorator
 def test_rng_decorator_isolation_and_reproducibility():
