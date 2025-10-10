@@ -7,7 +7,7 @@ import time
 def support_unobserve():
     if "--unobserve" in sys.argv:
         sys.argv.remove("--unobserve")
-        os.environ["WANDB_MODE"] = "dryrun"
+        os.environ["WANDB_MODE"] = "offline"
 
 
 def init(config, project=None, entity=None, tags=[], notes=None, **kwargs):
@@ -20,11 +20,13 @@ def init(config, project=None, entity=None, tags=[], notes=None, **kwargs):
             "WANDB_PROJECT" in os.environ
         ), "Please either pass in \"project\" to logging.init or set environment variable 'WANDB_PROJECT' to your wandb project name."
     tags.append(os.path.basename(sys.argv[0]))
-    if "_MY_JOB_ID" in os.environ:
-        x = f"(jobid:{os.environ['_MY_JOB_ID']})"
+    if "SLURM_JOB_ID" in os.environ:
+        x = f"(jobid:{os.environ['SLURM_JOB_ID']})"
         notes = x if notes is None else notes + " " + x
     if "SLURM_ARRAY_JOB_ID" in os.environ:
-        x = f"(job_array_id:{os.environ['SLURM_ARRAY_JOB_ID']})"
+        array_job_id = os.getenv("SLURM_ARRAY_JOB_ID")
+        array_task_id = os.getenv("SLURM_ARRAY_TASK_ID")
+        x = f"(job_array_id:{array_job_id}_{array_task_id})"
         notes = x if notes is None else notes + " " + x
     return wandb.init(
         project=project,
