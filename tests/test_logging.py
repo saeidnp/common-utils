@@ -15,7 +15,7 @@ from common_utils.logging import LoggingHandler, init as logging_init, support_u
 def test_support_unobserve():
     support_unobserve()
     assert '--unobserve' not in sys.argv
-    assert os.environ.get('WANDB_MODE') == 'dryrun'
+    assert os.environ.get('WANDB_MODE') == 'offline'
 
 # Test logging_init
 @patch('common_utils.logging.wandb.init')
