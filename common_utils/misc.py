@@ -1,4 +1,5 @@
 import itertools
+import numbers
 import os
 from functools import wraps
 from filelock import FileLock
@@ -143,3 +144,34 @@ def batchify_torch(max_batch_size, dim=0, batch_keys=None):
         raise ImportError("torch is not available. Please install torch to use batchify_torch.")
     concat_fn = lambda x: torch.cat(x, dim=dim)
     return _batchify_helper(max_batch_size, concat_fn=concat_fn, batch_keys=batch_keys)
+
+
+def expand_tensor_dims_as(in_tensor, x):
+    """
+    Expand the dimensions of `in_tensor` from the right so that its number of dimensions
+    matches `x`, after verifying that the corresponding (overlapping) dimensions are
+    broadcast-compatible.
+    
+    Args:
+    in_tensor : torch.Tensor or numbers.Number
+         Input tensor (or numeric scalar) whose dimensions should be expanded.
+    x : torch.Tensor
+         Reference tensor whose number of dimensions will be matched.
+
+    Returns:
+    torch.Tensor
+         A tensor with the same data as `in_tensor` but with trailing singleton
+         dimensions appended (using Tensor.view) so that its dimensionality equals
+         `x.dim()`. For numeric inputs, returns a scalar torch.Tensor.
+
+    Raises:
+    AssertionError
+         If any pair of overlapping dimensions (as produced by zip(in_tensor.shape, x.shape))
+         are not compatible (i.e., neither equal nor equal to 1).
+    """
+
+    if isinstance(in_tensor, numbers.Number):
+        return torch.tensor(in_tensor)
+    for d1, d2 in zip(in_tensor.shape, x.shape):
+        assert d1 == d2 or d1 == 1 or d2 == 1, f"Shapes do not match: {in_tensor.shape} vs {x.shape}"
+    return in_tensor.view(list(in_tensor.shape) + [1] * (x.dim() - in_tensor.dim()))

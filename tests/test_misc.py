@@ -29,7 +29,8 @@ from common_utils.misc import (
     get_register_fn,
     _batchify_helper, # Assuming this is intended to be tested, though typically private
     batchify_numpy,
-    batchify_torch
+    batchify_torch,
+    expand_tensor_dims_as
 )
 
 # Tests for ProtectFile
@@ -293,3 +294,193 @@ def test_batchify_torch_dict_small_n():
 @pytest.mark.skipif(not FILELOCK_AVAILABLE, reason="filelock not available")
 def test_imports_work(): # Dummy test to ensure conditional imports are fine
     assert True
+
+
+# Tests for expand_tensor_dims_as
+@pytest.mark.skipif(not TORCH_AVAILABLE, reason="torch not available")
+class TestExpandTensorDimsAs:
+    
+    def test_numeric_scalar_input(self):
+        """Test with numeric scalar input"""
+        x = torch.randn(2, 3, 4)
+        result = expand_tensor_dims_as(5, x)
+        assert isinstance(result, torch.Tensor)
+        assert result.item() == 5
+        assert result.shape == ()  # scalar tensor
+    
+    def test_numeric_float_input(self):
+        """Test with numeric float input"""
+        x = torch.randn(2, 3)
+        result = expand_tensor_dims_as(3.14, x)
+        assert isinstance(result, torch.Tensor)
+        assert abs(result.item() - 3.14) < 1e-6  # Use approximate equality for floats
+        assert result.shape == ()  # scalar tensor
+    
+    def test_same_dimensions(self):
+        """Test when input tensor already has same dimensions as reference"""
+        in_tensor = torch.randn(2, 3, 4)
+        x = torch.randn(2, 3, 4)
+        result = expand_tensor_dims_as(in_tensor, x)
+        assert result.shape == (2, 3, 4)
+        assert torch.equal(result, in_tensor)  # Should be identical
+    
+    def test_expand_trailing_dimensions(self):
+        """Test expanding tensor with trailing singleton dimensions"""
+        in_tensor = torch.randn(2, 3)
+        x = torch.randn(2, 3, 4, 5)
+        result = expand_tensor_dims_as(in_tensor, x)
+        expected_shape = (2, 3, 1, 1)
+        assert result.shape == expected_shape
+        # Check that data is preserved
+        assert torch.equal(result.squeeze(), in_tensor)
+    
+    def test_expand_1d_to_4d(self):
+        """Test expanding 1D tensor to 4D"""
+        in_tensor = torch.tensor([1, 2, 3])
+        x = torch.randn(3, 1, 1, 1)
+        result = expand_tensor_dims_as(in_tensor, x)
+        expected_shape = (3, 1, 1, 1)
+        assert result.shape == expected_shape
+        assert torch.equal(result.squeeze(), in_tensor)
+    
+    def test_scalar_tensor_to_multi_dim(self):
+        """Test expanding scalar tensor to multi-dimensional"""
+        in_tensor = torch.tensor(42.)
+        x = torch.randn(1, 1, 1)
+        result = expand_tensor_dims_as(in_tensor, x)
+        expected_shape = (1, 1, 1)
+        assert result.shape == expected_shape
+        assert result.item() == 42.
+    
+    def test_broadcast_compatible_dimensions(self):
+        """Test with broadcast-compatible dimensions"""
+        in_tensor = torch.randn(1, 3)  # dimension 0 is 1, can broadcast
+        x = torch.randn(2, 3, 4)
+        result = expand_tensor_dims_as(in_tensor, x)
+        expected_shape = (1, 3, 1)
+        assert result.shape == expected_shape
+    
+    def test_broadcast_compatible_mixed(self):
+        """Test with mixed broadcast-compatible dimensions"""
+        in_tensor = torch.randn(1, 3, 1)
+        x = torch.randn(2, 3, 4, 5, 6)
+        result = expand_tensor_dims_as(in_tensor, x)
+        expected_shape = (1, 3, 1, 1, 1)
+        assert result.shape == expected_shape
+    
+    def test_incompatible_dimensions_error(self):
+        """Test that incompatible dimensions raise AssertionError"""
+        in_tensor = torch.randn(2, 4)  # dimension 1 is 4
+        x = torch.randn(2, 3)  # dimension 1 is 3, not compatible with 4
+        with pytest.raises(AssertionError, match="Shapes do not match"):
+            expand_tensor_dims_as(in_tensor, x)
+    
+    def test_incompatible_first_dimension_error(self):
+        """Test error when first dimensions are incompatible"""
+        in_tensor = torch.randn(3, 2)
+        x = torch.randn(5, 2)  # first dimension mismatch: 3 vs 5
+        with pytest.raises(AssertionError, match="Shapes do not match"):
+            expand_tensor_dims_as(in_tensor, x)
+    
+    def test_empty_tensor(self):
+        """Test with empty tensor"""
+        in_tensor = torch.empty(0, 2)
+        x = torch.randn(0, 2, 3, 4)
+        result = expand_tensor_dims_as(in_tensor, x)
+        expected_shape = (0, 2, 1, 1)
+        assert result.shape == expected_shape
+    
+    def test_zero_dimensional_reference(self):
+        """Test when reference tensor is zero-dimensional"""
+        in_tensor = torch.randn(2, 3)
+        x = torch.tensor(5.)  # 0-dimensional tensor (x.dim() == 0)
+        # When reference has 0 dimensions and input has more, no expansion is done
+        result = expand_tensor_dims_as(in_tensor, x)
+        assert result.shape == (2, 3)  # Same as input, no expansion
+        assert torch.equal(result, in_tensor)
+    
+    def test_higher_dim_input_than_reference(self):
+        """Test when input has more dimensions than reference"""
+        in_tensor = torch.randn(2, 3, 4)
+        x = torch.randn(2, 3)  # fewer dimensions than in_tensor
+        # When input has more dimensions than reference, no expansion is done
+        result = expand_tensor_dims_as(in_tensor, x)
+        assert result.shape == (2, 3, 4)  # Same as input
+        assert torch.equal(result, in_tensor)
+    
+    def test_single_dimension_expansion(self):
+        """Test expanding by exactly one dimension"""
+        in_tensor = torch.randn(5)
+        x = torch.randn(5, 1)
+        result = expand_tensor_dims_as(in_tensor, x)
+        expected_shape = (5, 1)
+        assert result.shape == expected_shape
+        assert torch.equal(result.squeeze(-1), in_tensor)
+    
+    def test_preserves_data_type(self):
+        """Test that data type is preserved"""
+        in_tensor = torch.tensor([1, 2, 3], dtype=torch.int32)
+        x = torch.randn(3, 1, 1)
+        result = expand_tensor_dims_as(in_tensor, x)
+        assert result.dtype == torch.int32
+        assert result.shape == (3, 1, 1)
+    
+    def test_preserves_device(self):
+        """Test that device is preserved"""
+        # Only test if CUDA is available
+        if torch.cuda.is_available():
+            device = torch.device('cuda:0')
+            in_tensor = torch.randn(2, 3).to(device)
+            x = torch.randn(2, 3, 4).to(device)
+            result = expand_tensor_dims_as(in_tensor, x)
+            assert result.device == device
+        else:
+            # Test CPU device
+            in_tensor = torch.randn(2, 3)
+            x = torch.randn(2, 3, 4)
+            result = expand_tensor_dims_as(in_tensor, x)
+            assert result.device == torch.device('cpu')
+    
+    def test_negative_numbers(self):
+        """Test with negative numeric inputs"""
+        x = torch.randn(2, 3)
+        result = expand_tensor_dims_as(-42, x)
+        assert result.item() == -42
+        assert result.shape == ()
+    
+    def test_zero_numeric_input(self):
+        """Test with zero as numeric input"""
+        x = torch.randn(3, 3, 3)
+        result = expand_tensor_dims_as(0, x)
+        assert result.item() == 0
+        assert result.shape == ()
+    
+    def test_incompatible_shapes_detailed(self):
+        """Test various incompatible shape scenarios"""
+        # Case 1: Different sizes in overlapping dimensions (neither is 1)
+        in_tensor = torch.randn(3, 5)  # shape (3, 5)
+        x = torch.randn(2, 4, 6)       # shape (2, 4, 6) - overlaps at (3 vs 2, 5 vs 4)
+        with pytest.raises(AssertionError, match="Shapes do not match"):
+            expand_tensor_dims_as(in_tensor, x)
+        
+        # Case 2: More specific incompatible dimension
+        in_tensor = torch.randn(4, 3)
+        x = torch.randn(4, 7, 2)  # Second dimension: 3 vs 7 (incompatible)
+        with pytest.raises(AssertionError, match="Shapes do not match"):
+            expand_tensor_dims_as(in_tensor, x)
+    
+    def test_compatible_with_ones(self):
+        """Test that dimensions of size 1 are broadcast-compatible"""
+        # Input tensor has dimension 1, reference has larger dimension
+        in_tensor = torch.randn(1, 5, 1)
+        x = torch.randn(3, 5, 4, 2)
+        result = expand_tensor_dims_as(in_tensor, x)
+        expected_shape = (1, 5, 1, 1)  # Expanded with trailing dimensions
+        assert result.shape == expected_shape
+        
+        # Reference tensor has dimension 1, input has larger dimension  
+        in_tensor = torch.randn(3, 5)
+        x = torch.randn(3, 1, 4)
+        result = expand_tensor_dims_as(in_tensor, x)
+        expected_shape = (3, 5, 1)
+        assert result.shape == expected_shape
