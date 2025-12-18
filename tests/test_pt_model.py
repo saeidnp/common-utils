@@ -14,7 +14,7 @@ except ImportError:
     nn = None
 
 if TORCH_AVAILABLE:
-    from common_utils.ptutils.model import model_device, ModelBase
+    from common_utils.ptutils.model import model_device, ModelBase, eval_mode
 else:
     # Dummy classes/functions if torch is not available, to allow parsing
     # pytestmark will skip all tests anyway.
@@ -172,3 +172,33 @@ def test_model_base_device_method():
         assert model.device().type == 'cuda'
         # model.to('cpu')
         # assert model.device().type == 'cpu'
+
+
+# Test eval_mode context manager
+def test_eval_mode():
+    model = SimpleNN(10, 2)
+
+    # Scenario 1: Model initially in training mode
+    model.train()
+    assert model.training is True
+    with eval_mode(model):
+        assert model.training is False
+    assert model.training is True
+
+    # Scenario 2: Model initially in eval mode
+    model.eval()
+    assert model.training is False
+    with eval_mode(model):
+        assert model.training is False
+    assert model.training is False
+
+    # Scenario 3: Exception handling
+    model.train()
+    assert model.training is True
+    try:
+        with eval_mode(model):
+            assert model.training is False
+            raise RuntimeError("Test Exception")
+    except RuntimeError:
+        pass
+    assert model.training is True
