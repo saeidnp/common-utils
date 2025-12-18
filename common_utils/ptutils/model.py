@@ -1,9 +1,11 @@
 import torch
 from torch import nn
+from contextlib import contextmanager
 
 
 def model_device(model):
     return next(model.parameters()).device
+
 
 class ModelBase(nn.Module):
     def __init__(self):
@@ -21,7 +23,9 @@ class ModelBase(nn.Module):
         torch.save(to_save, path)
 
     def load(self, path, strict=True):
-        data = torch.load(path, map_location=lambda storage, loc: storage, weights_only=False)
+        data = torch.load(
+            path, map_location=lambda storage, loc: storage, weights_only=False
+        )
         self.load_state_dict(data["state_dict"], strict=strict)
         return data
 
@@ -30,3 +34,29 @@ class ModelBase(nn.Module):
 
     def device(self):
         return model_device(self)
+
+
+@contextmanager
+def eval_mode(model):
+    """
+    Context manager for temporarily switching a PyTorch model to evaluation mode.
+    This context manager saves the model's original training state, switches it to
+    evaluation mode for the duration of the context, and then restores the original
+    state upon exit. This is useful for running inference or validation without
+    affecting the model's training state.
+    Args:
+        model: A PyTorch model (nn.Module) to temporarily set to evaluation mode.
+    Yields:
+        model: The same model object in evaluation mode.
+    Example:
+        >>> with eval_mode(model):
+        ...     predictions = model(input_data)
+        >>> # model is restored to its original state here
+    """
+
+    was_training = model.training
+    model.eval()
+    try:
+        yield model
+    finally:
+        model.train(was_training)
