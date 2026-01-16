@@ -7,6 +7,7 @@ import shutil
 
 import numpy as np
 import pytest
+from unittest.mock import patch
 
 # Attempt to import torch and filelock, or skip tests if not available
 try:
@@ -117,6 +118,74 @@ def test_num_available_cores_returns_positive_int():
     cores = num_available_cores()
     assert isinstance(cores, int)
     assert cores >= 1
+
+def test_num_available_cores_affinity():
+    # Mock os.sched_getaffinity to return a specific set of CPUs (e.g. 4 CPUs)
+    # We use create=True because on non-Linux systems sched_getaffinity might not exist
+    with patch("os.sched_getaffinity", create=True) as mock_affinity:
+        mock_affinity.return_value = {0, 1, 2, 3}
+        assert num_available_cores() == 4
+
+def test_num_available_cores_slurm():
+    # Mock os.sched_getaffinity to raise AttributeError (simulate non-Linux or simple failure)
+    # Set SLURM_CPUS_PER_TASK to '8'
+    with patch("os.sched_getaffinity", create=True, side_effect=AttributeError):
+        with patch.dict(os.environ, {"SLURM_CPUS_PER_TASK": "8"}):
+            assert num_available_cores() == 8
+
+def test_num_available_cores_slurm_job_cpus():
+    # Mock os.sched_getaffinity failure
+    # Ensure SLURM_CPUS_PER_TASK is unset (so we fall through)
+    # Set SLURM_JOB_CPUS_PER_NODE to '16(x2)'
+    with patch("os.sched_getaffinity", create=True, side_effect=AttributeError):
+        # We start with a clean environment or ensure checking order
+        # patch.dict(os.environ, ...) updates the env.
+        # We need to ensure SLURM_CPUS_PER_TASK is NOT in env.
+        # It's safest to patch.dict logic carefully.
+
+        # Let's clean relevant keys
+        keys_to_remove = ["SLURM_CPUS_PER_TASK"]
+        with patch.dict(os.environ, {"SLURM_JOB_CPUS_PER_NODE": "16(x2)"}):
+            for k in keys_to_remove:
+                if k in os.environ:
+                    del os.environ[k]
+
+            assert num_available_cores() == 16
+
+def test_num_available_cores_fallback_cap():
+    # Mock os.sched_getaffinity failure
+    # Ensure no Slurm variables
+    # Mock os.cpu_count to return 32
+    # Set cap to 10
+    with patch("os.sched_getaffinity", create=True, side_effect=AttributeError), \
+         patch("os.cpu_count", return_value=32):
+
+        # Remove slurm vars from env for this block
+        slurm_vars = ["SLURM_CPUS_PER_TASK", "SLURM_JOB_CPUS_PER_NODE", "SLURM_CPUS_ON_NODE"]
+        # We can't easily 'remove' with patch.dict unless we define the dict explicitly or use del inside
+        with patch.dict(os.environ):
+            for var in slurm_vars:
+                if var in os.environ:
+                    del os.environ[var]
+
+            assert num_available_cores(cap=10) == 10
+            assert num_available_cores(cap=None) == 32
+            assert num_available_cores(cap=50) == 32
+
+def test_num_available_cores_fallback_no_cpu_count():
+    # Mock os.sched_getaffinity failure
+    # Ensure no Slurm variables
+    # Mock os.cpu_count to return None
+    with patch("os.sched_getaffinity", create=True, side_effect=AttributeError), \
+         patch("os.cpu_count", return_value=None):
+
+        slurm_vars = ["SLURM_CPUS_PER_TASK", "SLURM_JOB_CPUS_PER_NODE", "SLURM_CPUS_ON_NODE"]
+        with patch.dict(os.environ):
+            for var in slurm_vars:
+                if var in os.environ:
+                    del os.environ[var]
+
+            assert num_available_cores() == 1
 
 # Tests for splitit
 def test_splitit_various_cases():

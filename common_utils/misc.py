@@ -34,22 +34,54 @@ class ProtectFile(FileLock):
 def infinite_loader(dataloader):
     return itertools.cycle(dataloader)
 
+def num_available_cores(cap=None):
+    """
+    Return the number of CPU cores available to the current job/process.
 
-def num_available_cores():
-    # Copied from pytorch source code https://pytorch.org/docs/stable/_modules/torch/utils/data/dataloader.html#DataLoader
-    max_num_worker_suggest = None
-    if hasattr(os, "sched_getaffinity"):
-        try:
-            max_num_worker_suggest = len(os.sched_getaffinity(0))
-        except Exception:
-            pass
-    if max_num_worker_suggest is None:
-        # os.cpu_count() could return Optional[int]
-        # get cpu count first and check None in order to satify mypy check
-        cpu_count = os.cpu_count()
-        if cpu_count is not None:
-            max_num_worker_suggest = cpu_count
-    return max_num_worker_suggest or 1
+    Priority:
+    1. sched_getaffinity (respects cgroups / Slurm / taskset)
+    2. Slurm environment variables
+    3. os.cpu_count(), capped at `cap`
+
+    Parameters
+    ----------
+    cap : int
+        Maximum number of cores to return when falling back to os.cpu_count()
+        If None, no cap is applied.
+
+    Returns
+    -------
+    int
+        Number of usable CPU cores
+    """
+
+    # 1. Linux affinity (most accurate)
+    try:
+        affinity = os.sched_getaffinity(0)
+        if affinity:
+            return len(affinity)
+    except (AttributeError, NotImplementedError):
+        pass
+
+    # 2. Slurm environment variables (ordered by reliability)
+    for var in (
+        "SLURM_CPUS_PER_TASK",
+        "SLURM_JOB_CPUS_PER_NODE",
+        "SLURM_CPUS_ON_NODE",
+    ):
+        val = os.environ.get(var)
+        if val:
+            try:
+                # SLURM_JOB_CPUS_PER_NODE can be like "8(x2)"
+                return int(val.split("(")[0])
+            except ValueError:
+                pass
+
+    # 3. Fallback: os.cpu_count() with cap
+    cpu_count = os.cpu_count() or 1
+    if cap is not None:
+        cpu_count = min(cpu_count, cap)
+    return cpu_count
 
 
 def splitit(total_size, split_size):
