@@ -16,6 +16,9 @@ colorblind_cycle = [
 
 
 def setup_matplotlib():
+    """
+    Setup matplotlib with LaTeX support and nice fonts for publication-quality plots.
+    """
     nice_fonts = {
         # Use LaTeX to write all text
         "text.usetex": True,
@@ -79,6 +82,18 @@ def set_size(width, fraction=1, subplots=(1, 1)):
 
 
 def generate_diverse_colors(n_colors, n_global_moves=32, ref_color=None):
+    """
+    Generate n_colors diverse colors explicitly.
+
+    Args:
+        n_colors (int): Number of colors to generate.
+        n_global_moves (int, optional): Number of global moves to perform. Defaults to 32.
+        ref_color (list or np.ndarray, optional): A list or numpy array of size 3 (r, g, b) with values in [0, 1].
+                                                  If provided, the generated colors will be diverse from this color.
+
+    Returns:
+        np.ndarray: An array of shape (n_colors, 3) containing the generated colors in RGB format [0, 1].
+    """
     # ref_color: a list of numpy array with size 3 (r,g,b) and values in [0, 1]
 
     class Color:
@@ -264,6 +279,15 @@ def generate_diverse_colors(n_colors, n_global_moves=32, ref_color=None):
 
 
 def legend_without_duplicate_labels(ax):
+    """
+    Create a legend without duplicate labels.
+
+    Args:
+        ax (matplotlib.axes.Axes): The axes object to create the legend for.
+
+    Returns:
+        tuple: A tuple containing (handles, labels).
+    """
     # Source: https://stackoverflow.com/questions/19385639/duplicate-items-in-legend-in-matplotlib
     handles, labels = ax.get_legend_handles_labels()
     unique = [

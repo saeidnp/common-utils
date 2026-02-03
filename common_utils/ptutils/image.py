@@ -3,13 +3,17 @@ import PIL
 import numpy as np
 
 def tensor2pil(tensor, drange=[0,1]):
-    """Given a tensor of shape (Bx)Cxwxh with pixel values in drange, returns a PIL image
-       of the tensor. Returns a list of images if the input tensor is a batch.
-       C can be 1 or 3. If C=1, the image is grayscale. If C=3, the image is RGB.
+    """
+    Given a tensor of shape (Bx)Cxwxh with pixel values in drange, returns a PIL image
+    of the tensor. Returns a list of images if the input tensor is a batch.
+    C can be 1 or 3. If C=1, the image is grayscale. If C=3, the image is RGB.
 
     Args:
-        tensor: A tensor of shape (Bx)Cxwxh
+        tensor (torch.Tensor): A tensor of shape (Bx)Cxwxh
         drange (list, optional): Range of pixel values in the input tensor. Defaults to [0,1].
+
+    Returns:
+        PIL.Image.Image or list: The converted PIL image or list of images.
     """
     assert tensor.ndim == 3 or tensor.ndim == 4, "Input tensor must be 3D or 4D"
     if tensor.ndim == 3:

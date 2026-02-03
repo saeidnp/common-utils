@@ -23,16 +23,34 @@ except ImportError:
 
 
 class ProtectFile(FileLock):
-    """ Given a file path, this class will create a lock file and prevent race conditions
-        using a FileLock. The FileLock path is automatically inferred from the file path.
+    """
+    Given a file path, this class will create a lock file and prevent race conditions
+    using a FileLock. The FileLock path is automatically inferred from the file path.
     """
     def __init__(self, path, timeout=2, **kwargs):
+        """
+        Initialize the ProtectFile lock.
+
+        Args:
+            path (str or Path): The path to the file to protect.
+            timeout (int, optional): Timeout in seconds to wait for the lock. Defaults to 2.
+            **kwargs: Additional arguments passed to `FileLock`.
+        """
         path = Path(path)
         name = path.name if path.name.startswith(".") else f".{path.name}"
         lock_path = Path(path).parent / f"{name}.lock"
         super().__init__(lock_path, timeout=timeout, **kwargs)
 
 def infinite_loader(dataloader):
+    """
+    Create an infinite iterator from a dataloader.
+
+    Args:
+        dataloader (iterable): The dataloader to cycle through.
+
+    Returns:
+        itertools.cycle: An infinite iterator over the dataloader's data.
+    """
     return itertools.cycle(dataloader)
 
 def num_available_cores(cap=None):
@@ -86,8 +104,16 @@ def num_available_cores(cap=None):
 
 
 def splitit(total_size, split_size):
-    """Splits total_size into chunks of maximum size split_size and yeilds the chunk sizes.
+    """
+    Split total_size into chunks of maximum size split_size and yields the chunk sizes.
     It is guaranteed that the sum of the returned chunks is equal to total_size.
+
+    Args:
+        total_size (int): Total size to split.
+        split_size (int): Maximum size of each chunk.
+
+    Yields:
+        int: The size of each chunk.
     """
     assert total_size >= 0, f"total_size must be non-negative, got {total_size}"
     assert split_size > 0, f"split_size must be positive, got {split_size}"
@@ -97,7 +123,17 @@ def splitit(total_size, split_size):
 
 def get_register_fn(_CLASSES):
     def register_fn(cls=None, *, name=None):
-        """A decorator for registering classes."""
+        """
+        A decorator for registering classes.
+
+        Args:
+            cls (type, optional): The class to register.
+            name (str, optional): The name to register the class under.
+                                  If None, uses the class name.
+
+        Returns:
+            type or callable: The registered class or a decorator.
+        """
 
         def _register(cls):
             if name is None:
@@ -125,12 +161,10 @@ def _batchify_helper(max_batch_size, concat_fn, batch_keys=None):
     Args:
         max_batch_size (int or None): The maximum batch size. If `None`, no batching will be performed.
         concat_fn (callable): A function used to concatenate the batched samples.
-        dim (int, optional): The dimension along which to concatenate the batched samples. Defaults to 0.
         batch_keys (list or None, optional): A list of keys to batch. It should be `None` iff the decorated function returns an array/tensor.
 
     Returns:
         callable: The decorated function.
-
     """
     def decorator(func):
         @wraps(func)
@@ -168,10 +202,37 @@ def _batchify_helper(max_batch_size, concat_fn, batch_keys=None):
     return decorator
 
 def batchify_numpy(max_batch_size, axis=0, batch_keys=None):
+    """
+    Decorator to batchify functions returning dictionary of numpy arrays or a single numpy array.
+
+    Args:
+        max_batch_size (int or None): Maximum batch size.
+        axis (int, optional): Axis along which to concatenate. Defaults to 0.
+        batch_keys (list or None, optional): Keys in the dictionary to batch.
+                                           If None, expects a single numpy array return.
+
+    Returns:
+        callable: The decorated function.
+    """
     concat_fn = lambda x: np.concatenate(x, axis=axis)
     return _batchify_helper(max_batch_size, concat_fn=concat_fn, batch_keys=batch_keys)
 
 def batchify_torch(max_batch_size, dim=0, batch_keys=None):
+    """
+    Decorator to batchify functions returning dictionary of torch tensors or a single torch tensor.
+
+    Args:
+        max_batch_size (int or None): Maximum batch size.
+        dim (int, optional): Dimension along which to concatenate. Defaults to 0.
+        batch_keys (list or None, optional): Keys in the dictionary to batch.
+                                           If None, expects a single torch tensor return.
+
+    Returns:
+        callable: The decorated function.
+
+    Raises:
+        ImportError: If torch is not installed.
+    """
     if not _TORCH_AVAILABLE:
         raise ImportError("torch is not available. Please install torch to use batchify_torch.")
     concat_fn = lambda x: torch.cat(x, dim=dim)
@@ -183,7 +244,7 @@ def expand_tensor_dims_as(in_tensor, x):
     Expand the dimensions of `in_tensor` from the right so that its number of dimensions
     matches `x`, after verifying that the corresponding (overlapping) dimensions are
     broadcast-compatible.
-    
+
     Args:
     in_tensor : torch.Tensor or numbers.Number
          Input tensor (or numeric scalar) whose dimensions should be expanded.
