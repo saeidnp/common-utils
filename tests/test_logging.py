@@ -7,7 +7,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from common_utils.logging import LoggingHandler, init as logging_init, support_unobserve
+from common_utils.logging import LoggingHandler, init as logging_init, support_unobserve, silent_print
 
 # Test support_unobserve
 @patch.dict(os.environ, {}, clear=True)
@@ -217,3 +217,33 @@ class TestLoggingHandler:
         # Current implementation averages all, as 'single_value_metrics' is not used
         assert np.isclose(flushed_data['custom_sps'], 105)
         assert np.isclose(flushed_data['loss'], 0.4)      # Averaged
+
+
+# Test silent_print
+def test_silent_print_stdout(capfd):
+    """Test silent_print writes to stdout using os.write."""
+    silent_print("Hello", "World", sep=", ", file=sys.stdout)
+    captured = capfd.readouterr()
+    assert captured.out == "Hello, World\n"
+    assert captured.err == ""
+
+def test_silent_print_stderr(capfd):
+    """Test silent_print writes to stderr using os.write."""
+    silent_print("Error", "Message", file=sys.stderr)
+    captured = capfd.readouterr()
+    assert captured.out == ""
+    assert captured.err == "Error Message\n"
+
+def test_silent_print_custom_end(capfd):
+    """Test silent_print with custom end character."""
+    silent_print("Line", end='\t', file=sys.stdout)
+    captured = capfd.readouterr()
+    assert captured.out == "Line\t"
+
+def test_silent_print_invalid_file():
+    """Test silent_print raises ValueError for unsupported file objects."""
+    class DummyFile:
+        pass
+
+    with pytest.raises(ValueError, match="Unsupported file object"):
+        silent_print("test", file=DummyFile())

@@ -73,3 +73,25 @@ class LoggingHandler:
 
     def __call__(self, kwargs):
         self.log(kwargs)
+
+
+
+def silent_print(*args, sep=' ', end='\n', file=sys.stdout):
+    """
+    A drop-in replacement for print() that bypasses W&B console capture.
+    Supports sys.stdout and sys.stderr.
+    """
+    # 1. Determine the file descriptor
+    # Standard: 1 for stdout, 2 for stderr
+    if file is sys.stderr:
+        fd = 2
+    elif file is sys.stdout:
+        fd = 1
+    else:
+        raise ValueError("Unsupported file object. Only sys.stdout and sys.stderr are supported.")
+
+    # 2. Stringify and join arguments
+    message = sep.join(map(str, args)) + end
+
+    # 3. Write directly to the hardware stream
+    os.write(fd, message.encode())
