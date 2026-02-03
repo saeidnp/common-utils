@@ -10,7 +10,9 @@ def support_unobserve():
         os.environ["WANDB_MODE"] = "offline"
 
 
-def init(config, project=None, entity=None, tags=[], notes=None, **kwargs):
+def init(config, project=None, entity=None, tags=None, notes=None, **kwargs):
+    if tags is None:
+        tags = []
     if entity is None:
         assert (
             "WANDB_ENTITY" in os.environ
