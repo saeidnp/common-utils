@@ -17,6 +17,13 @@ def test_support_unobserve():
     assert '--unobserve' not in sys.argv
     assert os.environ.get('WANDB_MODE') == 'offline'
 
+@patch.dict(os.environ, {'WANDB_MODE': 'online'}, clear=True)
+@patch('sys.argv', ['script_name'])
+def test_support_unobserve_no_flag():
+    support_unobserve()
+    assert os.environ.get('WANDB_MODE') == 'online' # Should keep existing or defaults
+    assert 'script_name' in sys.argv
+
 # Test logging_init
 @patch('common_utils.logging.wandb.init')
 @patch.dict(os.environ, {'WANDB_ENTITY': 'test_entity', 'WANDB_PROJECT': 'test_project'}, clear=True)
@@ -63,6 +70,47 @@ def test_logging_init_missing_entity_project(mock_wandb_init):
     # Test with entity provided but project missing
     with pytest.raises(AssertionError, match='Please either pass in "project" to logging.init or set environment variable \'WANDB_PROJECT\' to your wandb project name.'):
         logging_init(config={'lr': 0.01}, entity="test_entity")
+
+@patch('common_utils.logging.wandb.init')
+@patch.dict(os.environ, {
+    'WANDB_ENTITY': 'test_entity',
+    'WANDB_PROJECT': 'test_project',
+    'SLURM_JOB_ID': '12345'
+}, clear=True)
+@patch('sys.argv', ['script_name'])
+def test_logging_init_slurm_job_id(mock_wandb_init):
+    logging_init(config={})
+    # Check that notes argument contains SLURM info
+    mock_wandb_init.assert_called_once()
+    call_kwargs = mock_wandb_init.call_args.kwargs
+    assert '(jobid:12345)' in call_kwargs['notes']
+
+@patch('common_utils.logging.wandb.init')
+@patch.dict(os.environ, {
+    'WANDB_ENTITY': 'test_entity',
+    'WANDB_PROJECT': 'test_project',
+    'SLURM_ARRAY_JOB_ID': '111',
+    'SLURM_ARRAY_TASK_ID': '2'
+}, clear=True)
+@patch('sys.argv', ['script_name'])
+def test_logging_init_slurm_array_id(mock_wandb_init):
+    logging_init(config={})
+    mock_wandb_init.assert_called_once()
+    call_kwargs = mock_wandb_init.call_args.kwargs
+    assert '(job_array_id:111_2)' in call_kwargs['notes']
+
+@patch('common_utils.logging.wandb.init')
+@patch.dict(os.environ, {
+    'WANDB_ENTITY': 'test_entity',
+    'WANDB_PROJECT': 'test_project',
+    'SLURM_JOB_ID': '12345'
+}, clear=True)
+@patch('sys.argv', ['script_name'])
+def test_logging_init_slurm_and_notes(mock_wandb_init):
+    logging_init(config={}, notes="Existing note")
+    mock_wandb_init.assert_called_once()
+    call_kwargs = mock_wandb_init.call_args.kwargs
+    assert "Existing note (jobid:12345)" in call_kwargs['notes']
 
 
 # Tests for LoggingHandler
@@ -217,6 +265,11 @@ class TestLoggingHandler:
         # Current implementation averages all, as 'single_value_metrics' is not used
         assert np.isclose(flushed_data['custom_sps'], 105)
         assert np.isclose(flushed_data['loss'], 0.4)      # Averaged
+
+    def test_logging_handler_reserved_key(self):
+        # Test that passing 'between_log_time' raises AssertionError
+        with pytest.raises(AssertionError, match="Please do not use 'between_log_time' as a key"):
+            self.handler.log({'between_log_time': 123})
 
 
 # Test silent_print
