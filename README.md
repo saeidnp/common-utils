@@ -1,7 +1,7 @@
 # Common Utils
 
 [![CI](https://github.com/saeidnp/common-utils/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/saeidnp/common-utils/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/saeidnp/common-utils/branch/main/graph/badge.svg?token=JLQ6Q6BDD5)](https://codecov.io/gh/saeidnp/common-utils)
+[![codecov](https://codecov.io/gh/saeidnp/common-utils/branch/main/graph/badge.svg?token=JLQ6Q6BDD5)](https://app.codecov.io/gh/saeidnp/common-utils/tree/main)
 
 `common-utils` is a lightweight Python library containing small, reusable utilities that I commonly used in my machine learning projects. It includes helpers for logging, reproducible randomness, plotting, file protection, and PyTorch-specific tasks.
 
