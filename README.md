@@ -99,6 +99,20 @@ size = set_size(page_width, fraction=0.5)
 
 Call `common_utils.plotting.setup_matplotlib()` to configure matplotlib for LaTeX rendering and consistent font sizes suitable for publications.
 
+### Loading legacy PyTorch checkpoints
+
+PyTorch 2.6 changed the default of `torch.load` to `weights_only=True`, which breaks loading older checkpoints that contain pickled objects (e.g. configs or optimizer state). Use `legacy_torch_load` to temporarily restore the old `weights_only=False` default:
+
+```python
+import torch
+from common_utils.ptutils import legacy_torch_load
+
+with legacy_torch_load():
+    checkpoint = torch.load('checkpoint.pth')
+```
+
+Only use this with checkpoints from trusted sources, since `weights_only=False` allows arbitrary code execution during unpickling.
+
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
